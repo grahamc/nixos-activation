@@ -12,16 +12,45 @@ pub struct FSTabFile<'a> {
     pub entries: Vec<FSTabEntry<'a>>,
 }
 
+/// A filesystem line
 #[derive(Debug, PartialEq)]
 pub struct FSTabEntry<'a> {
+    /// This field describes the block special device or
+    /// filesystem to be mounted.
     pub spec: &'a str,
+
+    /// This field  describes the mount point (target) for the
+    /// filesystem.
     pub file: &'a str,
+
+    /// This field describes the type of the filesystem.
     pub fs_type: &'a str,
+
+    /// This field describes the mount options associated with the
+    /// filesystem, in a comma separated list.
     pub options: &'a str,
+
+    /// This field is used by dump(8) to determine which filesystems
+    /// need to be dumped. Defaults to 0.
     pub dump: i8,
+
+    /// This field is used by fsck(8) to determine the order in which
+    /// filesystem checks are done at boot time. Defaults to 0.
     pub fsck_pass: i8,
 }
 
+/// Parse a single line of an fstab
+///
+/// According to `man fstab` each line is a series of space-separated
+/// fields. Leading spaces are ignored. Lines starting with a `#` are
+/// skipped.
+///
+/// According to the source code (libmount/src/tab_parse.c) invalid
+/// lines are simply skipped.
+///
+/// Note: According to the documentation, an fstab's `file` field can
+/// contain spaces and tabs if they are represented by \040 and \011.
+/// This function doesn't decode these octal characters.
 pub fn parse_fstab_line<'a>(fstab: &'a str) -> Option<FSTabEntry<'a>> {
     if COMMENT_REMOVAL_REGEXP.is_match(fstab) {
         return None
@@ -47,6 +76,11 @@ pub fn parse_fstab_line<'a>(fstab: &'a str) -> Option<FSTabEntry<'a>> {
     }
 }
 
+/// Pass in an iterator of ftab lines, ie: "my\nfile".lines()
+/// and get back a parsed representation of the file.
+///
+/// See parse_fstab_line for more information about edge cases and
+/// specific behavior of this implementation.
 pub fn parse_fstab<'a, T: Iterator<Item = &'a str>>(fstab_lines: T) -> FSTabFile<'a> {
     FSTabFile {
         entries: fstab_lines
@@ -117,7 +151,7 @@ mod tests {
     }
 
     #[test]
-    fn parse_fstab_line_invalid_trailing_comment() {
+    fn parse_fstab_line_invalid_too_many_fields() {
         assert_eq!(
             parse_fstab_line("/dev/disk/by-uuid/3aa72460-7d05-4bd4-861f-6ef8b82082dc / ext4 defaults 0 1 # foo # bar"),
             None,
