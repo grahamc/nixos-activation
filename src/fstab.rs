@@ -7,8 +7,10 @@ lazy_static! {
 }
 
 
+/// A valid, parsed fstab file
 #[derive(Debug, PartialEq)]
 pub struct FSTabFile<'a> {
+    /// All the entries which were validly parsed
     pub entries: Vec<FSTabEntry<'a>>,
 }
 
